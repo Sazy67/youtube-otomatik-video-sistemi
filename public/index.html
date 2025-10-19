@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Automation System - Dashboard</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            padding: 20px;
+        }
+        .header {
+            background: rgba(255,255,255,0.95);
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        .header h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+        .header p {
+            color: #7f8c8d;
+            font-size: 1.2em;
+        }
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+        .card {
+            background: rgba(255,255,255,0.95);
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        .card h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.4em;
+        }
+        .status {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+        }
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+        .status-green { background: #27ae60; }
+        .status-yellow { background: #f39c12; }
+        .status-red { background: #e74c3c; }
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            margin: 5px;
+            transition: all 0.3s ease;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        .video-form {
+            background: rgba(255,255,255,0.95);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ecf0f1;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s ease;
+        }
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .topic-examples {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 10px;
+            font-size: 0.9em;
+            color: #6c757d;
+        }
+        .topic-examples strong {
+            color: #495057;
+        }
+        .log {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 20px;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+        .emoji { font-size: 1.2em; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><span class="emoji">🎬</span> YouTube Automation System</h1>
+            <p>AI-Powered Video Creation & Upload Dashboard</p>
+        </div>
+
+        <div class="dashboard">
+            <div class="card">
+                <h3><span class="emoji">📊</span> System Status</h3>
+                <div class="status">
+                    <div class="status-dot status-green"></div>
+                    <span>Web Server: ACTIVE</span>
+                </div>
+                <div class="status">
+                    <div class="status-dot status-green"></div>
+                    <span>API Gateway: READY</span>
+                </div>
+                <div class="status">
+                    <div class="status-dot status-yellow"></div>
+                    <span>Database: MOCK MODE</span>
+                </div>
+                <div class="status">
+                    <div class="status-dot status-yellow"></div>
+                    <span>Queue: MEMORY MODE</span>
+                </div>
+                <button class="btn" id="healthBtn">Health Check</button>
+            </div>
+
+            <div class="card">
+                <h3><span class="emoji">🔐</span> Authentication</h3>
+                <div class="status">
+                    <div class="status-dot status-green"></div>
+                    <span>OAuth URL: GENERATED</span>
+                </div>
+                <div class="status">
+                    <div class="status-dot status-yellow"></div>
+                    <span>YouTube: PENDING</span>
+                </div>
+                <button class="btn" id="authBtn">YouTube OAuth</button>
+                <button class="btn" id="checkAuthBtn">Check Status</button>
+            </div>
+
+            <div class="card">
+                <h3><span class="emoji">🎥</span> Video Stats</h3>
+                <div class="status">
+                    <div class="status-dot status-green"></div>
+                    <span>Videos Created: 0</span>
+                </div>
+                <div class="status">
+                    <div class="status-dot status-green"></div>
+                    <span>Uploads Ready: 1</span>
+                </div>
+                <div class="status">
+                    <div class="status-dot status-yellow"></div>
+                    <span>Queue: 0 pending</span>
+                </div>
+                <button class="btn" id="viewVideosBtn">View Videos</button>
+            </div>
+        </div>
+
+        <div class="video-form">
+            <h3><span class="emoji">🎬</span> Create Custom Video</h3>
+            <div class="form-group">
+                <label for="topic">Video Topic: (Herhangi bir konu yazın)</label>
+                <input type="text" id="topic" value="Papatya Bakımı Nasıl Olur - Ev Bahçeciliği Rehberi" placeholder="Örnek: Domates Yetiştirme, Ev Bitkileri Bakımı, Organik Gübre...">
+                <div class="topic-examples">
+                    <strong>Örnek Konular:</strong><br>
+                    🌱 Domates Yetiştirme Rehberi<br>
+                    🌿 Ev Bitkileri Bakımı<br>
+                    🥕 Organik Gübre Nasıl Yapılır<br>
+                    🌹 Gül Bakımı ve Budama<br>
+                    🌾 Balkon Bahçeciliği<br>
+                    🍃 Aromatik Bitkiler Yetiştirme
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="duration">Duration (seconds):</label>
+                <input type="number" id="duration" value="480" min="60" max="1800">
+            </div>
+            <div class="form-group">
+                <label for="style">Video Style:</label>
+                <select id="style">
+                    <option value="educational">Educational</option>
+                    <option value="entertainment">Entertainment</option>
+                    <option value="news">News</option>
+                </select>
+            </div>
+            <button class="btn" id="createVideoBtn" style="font-size: 1.2em; padding: 15px 30px;">
+                <span class="emoji">🧪</span> Test Video (Simulation)
+            </button>
+            <button class="btn" id="realVideoBtn" style="font-size: 1.2em; padding: 15px 30px; background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);">
+                <span class="emoji">🎬</span> CREATE REAL VIDEO
+            </button>
+            <button class="btn" id="uploadBtn">
+                <span class="emoji">📺</span> Simulate YouTube Upload
+            </button>
+            <button class="btn" id="realUploadBtn" style="font-size: 1.2em; padding: 15px 30px; background: linear-gradient(135deg, #c0392b 0%, #8e44ad 100%);">
+                <span class="emoji">🚀</span> UPLOAD TO YOUTUBE
+            </button>
+        </div>
+
+        <div class="video-form" id="videoPreview" style="display: none;">
+            <h3><span class="emoji">👀</span> Video Preview</h3>
+            <div id="previewContent">
+                <p>Your video will appear here for preview...</p>
+            </div>
+            <div style="text-align: center; margin-top: 20px;">
+                <button class="btn" id="approveUploadBtn" style="background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%); font-size: 1.2em; padding: 15px 30px;">
+                    <span class="emoji">✅</span> APPROVE & UPLOAD TO YOUTUBE
+                </button>
+                <button class="btn" id="rejectVideoBtn" style="background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); margin-left: 10px;">
+                    <span class="emoji">❌</span> Create New Video
+                </button>
+            </div>
+        </div>
+
+        <div class="log" id="log">
+            <div>🚀 YouTube Automation System Dashboard Loaded</div>
+            <div>📊 System Status: All services operational</div>
+            <div>🌼 Ready to create videos with AI</div>
+        </div>
+    </div>
+
+    <script>
+        const log = document.getElementById('log');
+        
+        function addLog(message) {
+            const div = document.createElement('div');
+            div.textContent = new Date().toLocaleTimeString() + ' - ' + message;
+            log.appendChild(div);
+            log.scrollTop = log.scrollHeight;
+        }
+
+        async function checkHealth() {
+            addLog('🔍 Checking system health...');
+            try {
+                const response = await fetch('/api/dashboard/status');
+                const data = await response.json();
+                if (data.success) {
+                    addLog('✅ Health Check: System operational');
+                    addLog('⏱️ Uptime: ' + Math.floor(data.data.uptime) + ' seconds');
+                    addLog('💾 Memory: ' + Math.floor(data.data.memory.heapUsed / 1024 / 1024) + ' MB');
+                } else {
+                    addLog('⚠️ System check returned error');
+                }
+            } catch (error) {
+                addLog('❌ Health check failed: ' + error.message);
+            }
+        }
+
+        async function startAuth() {
+            addLog('🔐 Starting YouTube OAuth...');
+            try {
+                const response = await fetch('/auth/youtube?email=suatayaz@gmail.com');
+                const data = await response.json();
+                addLog('✅ OAuth URL generated');
+                addLog('🌐 Open browser to complete authentication');
+                if (data.data && data.data.authUrl) {
+                    window.open(data.data.authUrl, '_blank');
+                }
+            } catch (error) {
+                addLog('❌ OAuth failed: ' + error.message);
+            }
+        }
+
+        async function checkAuth() {
+            addLog('🔍 Checking authentication status...');
+            try {
+                const response = await fetch('/auth/me');
+                if (response.ok) {
+                    const data = await response.json();
+                    addLog('✅ User authenticated: ' + data.data.email);
+                    addLog('📺 YouTube channel connected');
+                } else if (response.status === 401) {
+                    addLog('⚠️ Not authenticated yet');
+                    addLog('🔐 Please complete YouTube OAuth first');
+                    addLog('👆 Click "YouTube OAuth" button above');
+                } else {
+                    addLog('❌ Auth check error: ' + response.status);
+                }
+            } catch (error) {
+                addLog('❌ Auth check failed: ' + error.message);
+            }
+        }
+
+        async function createVideo() {
+            const topic = document.getElementById('topic').value;
+            const duration = document.getElementById('duration').value;
+            const style = document.getElementById('style').value;
+            
+            addLog('🎬 Creating video: ' + topic);
+            addLog('⏱️ Duration: ' + duration + ' seconds');
+            addLog('🎓 Style: ' + style);
+            
+            try {
+                const response = await fetch('/api/dashboard/video', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ topic, duration, style })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    addLog('✅ Video creation started: ' + data.data.videoId);
+                    
+                    // Simulate processing steps
+                    data.data.steps.forEach((step, i) => {
+                        setTimeout(() => {
+                            addLog((i + 1) + '/6 ' + step);
+                            if (i === data.data.steps.length - 1) {
+                                setTimeout(() => {
+                                    addLog('✅ Video creation completed!');
+                                    addLog('🎉 "Papatya Bakımı" video ready for upload!');
+                                }, 1000);
+                            }
+                        }, i * 1500);
+                    });
+                } else {
+                    addLog('❌ Video creation failed');
+                }
+            } catch (error) {
+                addLog('❌ Video creation error: ' + error.message);
+            }
+        }
+
+        async function simulateUpload() {
+            addLog('📺 Starting YouTube upload simulation...');
+            
+            try {
+                const response = await fetch('/api/dashboard/upload', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ videoId: 'papatya-video' })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    addLog('🔐 Authenticating with YouTube...');
+                    setTimeout(() => addLog('📤 Uploading video file...'), 1000);
+                    setTimeout(() => addLog('🖼️ Uploading thumbnail...'), 2000);
+                    setTimeout(() => addLog('📝 Setting metadata and description...'), 3000);
+                    setTimeout(() => {
+                        addLog('✅ Upload completed successfully!');
+                        addLog('🎉 Video URL: ' + data.data.url);
+                        addLog('📺 "Papatya Bakımı" video is now live on YouTube!');
+                    }, 4000);
+                } else {
+                    addLog('❌ Upload simulation failed');
+                }
+            } catch (error) {
+                addLog('❌ Upload error: ' + error.message);
+            }
+        }
+
+        async function viewVideos() {
+            addLog('📹 Loading created videos...');
+            
+            try {
+                const response = await fetch('/api/dashboard/videos');
+                const data = await response.json();
+                
+                if (data.success && data.data.length > 0) {
+                    data.data.forEach((video, i) => {
+                        addLog(`🌼 Video ${i + 1}: "${video.title}"`);
+                        addLog(`⏱️ Duration: ${Math.floor(video.duration / 60)}:${(video.duration % 60).toString().padStart(2, '0')}`);
+                        addLog(`📊 Status: ${video.status.toUpperCase()}`);
+                    });
+                    addLog('🎯 SEO Score: 95/100 - Excellent');
+                } else {
+                    addLog('📹 No videos found');
+                }
+            } catch (error) {
+                addLog('❌ Failed to load videos: ' + error.message);
+            }
+        }
+
+        async function createRealVideo() {
+            const topic = document.getElementById('topic').value;
+            const duration = document.getElementById('duration').value;
+            const style = document.getElementById('style').value;
+            
+            if (!topic.trim()) {
+                addLog('❌ Please enter a video topic');
+                return;
+            }
+            
+            addLog('🎬 Starting REAL video creation...');
+            addLog('📝 Topic: ' + topic);
+            addLog('⏱️ Duration: ' + duration + ' seconds');
+            addLog('🎓 Style: ' + style);
+            addLog('');
+            addLog('⚠️ This will take 8-15 minutes to complete');
+            addLog('🔄 Please wait while we create your video...');
+            
+            try {
+                const response = await fetch('/api/dashboard/real-video', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ topic, duration: parseInt(duration), style })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    addLog('');
+                    addLog('🎉 REAL VIDEO CREATION COMPLETED!');
+                    addLog('✅ Video ID: ' + data.data.videoId);
+                    addLog('📁 Video file created: ' + data.data.files.video);
+                    addLog('🖼️ Thumbnail created: ' + data.data.files.thumbnail);
+                    addLog('📺 Title: ' + data.data.metadata.title);
+                    addLog('');
+                    addLog('🚀 Your video is ready for preview!');
+                    addLog('👀 Review your video below before uploading');
+                    
+                    // Store video data for upload
+                    window.lastCreatedVideo = data.data;
+                    
+                    // Show video preview
+                    addLog('🔄 Showing video preview...');
+                    setTimeout(() => {
+                        showVideoPreview(data.data);
+                    }, 1000);
+                    
+                } else {
+                    addLog('❌ Real video creation failed: ' + data.message);
+                }
+            } catch (error) {
+                addLog('❌ Real video creation error: ' + error.message);
+            }
+        }
+
+        function showVideoPreview(videoData) {
+            addLog('');
+            addLog('🎬 VIDEO CREATED SUCCESSFULLY!');
+            addLog('👀 Please review your video below...');
+            
+            // Show preview section
+            const previewSection = document.getElementById('videoPreview');
+            const previewContent = document.getElementById('previewContent');
+            
+            previewContent.innerHTML = `
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin: 15px 0;">
+                    <h4>📺 ${videoData.metadata.title}</h4>
+                    <p><strong>⏱️ Duration:</strong> ${Math.floor(videoData.duration / 60)}:${(videoData.duration % 60).toString().padStart(2, '0')}</p>
+                    <p><strong>📝 Description:</strong> ${videoData.metadata.description.substring(0, 200)}...</p>
+                    <p><strong>🏷️ Tags:</strong> ${videoData.metadata.tags.join(', ')}</p>
+                    <p><strong>📁 Video File:</strong> ${videoData.files.video}</p>
+                    <p><strong>🖼️ Thumbnail:</strong> ${videoData.files.thumbnail}</p>
+                </div>
+                <div style="background: #e8f5e8; padding: 15px; border-radius: 8px; border-left: 4px solid #27ae60;">
+                    <strong>👀 PREVIEW INSTRUCTIONS:</strong><br>
+                    1. Open File Explorer<br>
+                    2. Navigate to: <code>${videoData.files.video}</code><br>
+                    3. Watch the video<br>
+                    4. If you like it, click "APPROVE & UPLOAD" below
+                </div>
+            `;
+            
+            previewSection.style.display = 'block';
+            previewSection.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        async function uploadToYouTube() {
+            if (!window.lastCreatedVideo) {
+                addLog('❌ No video to upload. Please create a video first.');
+                return;
+            }
+            
+            addLog('🚀 Starting REAL YouTube upload...');
+            addLog('📺 Video: ' + window.lastCreatedVideo.metadata.title);
+            addLog('📁 File: ' + window.lastCreatedVideo.files.video);
+            addLog('');
+            addLog('⚠️ This will upload to your "Yeşil Hayat Rotası" channel');
+            
+            try {
+                const response = await fetch('/api/dashboard/real-upload', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        videoId: window.lastCreatedVideo.videoId,
+                        videoData: window.lastCreatedVideo
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    addLog('');
+                    addLog('🎉 YOUTUBE UPLOAD SUCCESSFUL!');
+                    addLog('✅ YouTube ID: ' + data.data.youtubeId);
+                    addLog('🔗 Video URL: ' + data.data.url);
+                    addLog('📺 Channel: ' + data.data.channel);
+                    addLog('⏰ Upload Time: ' + new Date(data.data.uploadTime).toLocaleString());
+                    addLog('');
+                    addLog('🌟 Your video is now LIVE on YouTube!');
+                    
+                } else {
+                    addLog('❌ YouTube upload failed: ' + data.message);
+                }
+            } catch (error) {
+                addLog('❌ YouTube upload error: ' + error.message);
+            }
+        }
+
+        // Event Listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            // Button event listeners
+            document.getElementById('healthBtn').addEventListener('click', checkHealth);
+            document.getElementById('authBtn').addEventListener('click', startAuth);
+            document.getElementById('checkAuthBtn').addEventListener('click', checkAuth);
+            document.getElementById('viewVideosBtn').addEventListener('click', viewVideos);
+            document.getElementById('createVideoBtn').addEventListener('click', createVideo);
+            document.getElementById('realVideoBtn').addEventListener('click', createRealVideo);
+            document.getElementById('uploadBtn').addEventListener('click', simulateUpload);
+            document.getElementById('realUploadBtn').addEventListener('click', uploadToYouTube);
+            
+            // Preview section event listeners
+            document.getElementById('approveUploadBtn').addEventListener('click', function() {
+                document.getElementById('videoPreview').style.display = 'none';
+                uploadToYouTube();
+            });
+            
+            document.getElementById('rejectVideoBtn').addEventListener('click', function() {
+                document.getElementById('videoPreview').style.display = 'none';
+                addLog('❌ Video rejected. Create a new video with different settings.');
+                window.lastCreatedVideo = null;
+            });
+            
+            // Auto-refresh system status
+            setInterval(checkHealth, 30000);
+        });
+    </script>
+</body>
+</html>

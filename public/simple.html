@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Automation System - Test</title>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0; padding: 20px; min-height: 100vh;
+        }
+        .container { 
+            max-width: 900px; margin: 0 auto; 
+            background: rgba(255,255,255,0.95); 
+            padding: 30px; border-radius: 15px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        h1 { color: #2c3e50; text-align: center; margin-bottom: 30px; }
+        .status { 
+            background: #e9ecef; padding: 15px; border-radius: 8px; 
+            margin-bottom: 20px; font-weight: 600;
+        }
+        .buttons { 
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+            gap: 15px; margin-bottom: 20px;
+        }
+        .btn { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; border: none; padding: 15px 20px; 
+            border-radius: 8px; cursor: pointer; font-size: 16px;
+            transition: all 0.3s ease; font-weight: 600;
+        }
+        .btn:hover { 
+            transform: translateY(-2px); 
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        .log { 
+            background: #2c3e50; color: #ecf0f1; padding: 20px; 
+            border-radius: 10px; font-family: 'Courier New', monospace; 
+            height: 400px; overflow-y: auto; line-height: 1.4;
+        }
+        .log div { margin: 5px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎬 YouTube Automation System</h1>
+        
+        <div class="status" id="status">
+            <strong>System Status:</strong> Loading...
+        </div>
+
+        <div class="buttons">
+            <button class="btn" onclick="testHealthCheck()">🔍 Health Check</button>
+            <button class="btn" onclick="testVideoCreation()">🎬 Create Papatya Video</button>
+            <button class="btn" onclick="testUpload()">📺 Simulate Upload</button>
+            <button class="btn" onclick="testViewVideos()">📹 View Videos</button>
+            <button class="btn" onclick="startAuth()">🔐 YouTube OAuth</button>
+            <button class="btn" onclick="clearLog()">🗑️ Clear Log</button>
+        </div>
+
+        <div class="log" id="log">
+            <div>🚀 YouTube Automation System Test Dashboard</div>
+            <div>📊 System ready for testing</div>
+            <div>🌼 Ready to create "Papatya Bakımı" video</div>
+        </div>
+    </div>
+
+    <script src="/dashboard.js"></script>
+</body>
+</html>
