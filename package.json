@@ -19,6 +19,7 @@
     "setup:unix": "chmod +x scripts/setup.sh && ./scripts/setup.sh"
   },
   "dependencies": {
+    "@google-cloud/text-to-speech": "^6.3.1",
     "@google/generative-ai": "^0.24.1",
     "axios": "^1.12.2",
     "bcryptjs": "^2.4.3",
@@ -26,6 +27,7 @@
     "canvas": "^2.11.2",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
+    "edge-tts": "^1.0.1",
     "express": "^4.18.2",
     "fluent-ffmpeg": "^2.1.2",
     "googleapis": "^128.0.0",

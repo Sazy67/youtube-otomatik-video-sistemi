@@ -2,10 +2,10 @@ import axios from 'axios';
 import { VisualContent } from '../types';
 import { config } from '../config';
 import { logger } from '../utils/logger';
-import { 
-  ExternalServiceError, 
+import {
+  ExternalServiceError,
   ValidationError,
-  FileStorageError 
+  FileStorageError
 } from '../utils/errors';
 import fs from 'fs/promises';
 import path from 'path';
@@ -40,17 +40,17 @@ export class VisualContentService {
       // Calculate how many images/videos we need
       const averageImageDuration = 5; // seconds per image
       const neededVisuals = Math.ceil(duration / averageImageDuration);
-      
+
       // Extract keywords from topic for better search
       const keywords = this.extractKeywords(topic);
-      
+
       // Search for visual content from multiple sources
       const visualContent: VisualContent[] = [];
-      
+
       // Get images from Unsplash
       const unsplashImages = await this.searchUnsplashImages(keywords, Math.ceil(neededVisuals * 0.7));
       visualContent.push(...unsplashImages);
-      
+
       // Get videos from Pexels (if API key available)
       if (this.pexelsApiKey) {
         const pexelsVideos = await this.searchPexelsVideos(keywords, Math.ceil(neededVisuals * 0.3));
@@ -60,7 +60,7 @@ export class VisualContentService {
       // If we don't have enough content, get more images
       if (visualContent.length < neededVisuals) {
         const additionalImages = await this.searchUnsplashImages(
-          [topic], 
+          [topic],
           neededVisuals - visualContent.length
         );
         visualContent.push(...additionalImages);
@@ -68,9 +68,9 @@ export class VisualContentService {
 
       // Assign timing to visual content
       const timedVisualContent = this.assignTimingToVisuals(visualContent, duration);
-      
-      logger.info('Visual content found successfully', { 
-        topic, 
+
+      logger.info('Visual content found successfully', {
+        topic,
         totalVisuals: timedVisualContent.length,
         images: timedVisualContent.filter(v => v.type === 'image').length,
         videos: timedVisualContent.filter(v => v.type === 'video').length
@@ -79,11 +79,11 @@ export class VisualContentService {
       return timedVisualContent;
     } catch (error) {
       logger.error('Failed to find visual content', error as Error, { topic, duration });
-      
+
       if (error instanceof ValidationError) {
         throw error;
       }
-      
+
       throw new ExternalServiceError('VisualContent', `Failed to find visual content: ${(error as Error).message}`);
     }
   }
@@ -100,7 +100,7 @@ export class VisualContentService {
 
       const query = keywords.join(' ');
       const url = `https://api.unsplash.com/search/photos`;
-      
+
       const response = await axios.get(url, {
         params: {
           query,
@@ -115,7 +115,7 @@ export class VisualContentService {
       });
 
       const images = response.data.results || [];
-      
+
       return images.map((image: any) => ({
         type: 'image' as const,
         source: image.urls.regular,
@@ -141,7 +141,7 @@ export class VisualContentService {
 
       const query = keywords.join(' ');
       const url = `https://api.pexels.com/videos/search`;
-      
+
       const response = await axios.get(url, {
         params: {
           query,
@@ -155,10 +155,10 @@ export class VisualContentService {
       });
 
       const videos = response.data.videos || [];
-      
+
       return videos.map((video: any) => {
         // Get medium quality video file
-        const videoFile = video.video_files.find((file: any) => 
+        const videoFile = video.video_files.find((file: any) =>
           file.quality === 'hd' || file.quality === 'sd'
         ) || video.video_files[0];
 
@@ -181,7 +181,7 @@ export class VisualContentService {
    */
   private generatePlaceholderImages(keywords: string[], count: number): VisualContent[] {
     const placeholders: VisualContent[] = [];
-    
+
     for (let i = 0; i < count; i++) {
       const keyword = keywords[i % keywords.length] || 'placeholder';
       placeholders.push({
@@ -192,7 +192,7 @@ export class VisualContentService {
         url: `https://via.placeholder.com/1920x1080/4A90E2/FFFFFF?text=${encodeURIComponent(keyword)}`,
       });
     }
-    
+
     return placeholders;
   }
 
@@ -274,18 +274,18 @@ export class VisualContentService {
       // Save to cache
       await fs.writeFile(filePath, response.data);
 
-      logger.debug('Visual content cached', { 
-        visualId, 
-        filename, 
+      logger.debug('Visual content cached', {
+        visualId,
+        filename,
         size: response.data.length,
-        type: visual.type 
+        type: visual.type
       });
 
       return filePath;
     } catch (error) {
-      logger.error('Failed to download and cache visual', error as Error, { 
+      logger.error('Failed to download and cache visual', error as Error, {
         source: visual.source,
-        type: visual.type 
+        type: visual.type
       });
       throw new FileStorageError(`Failed to cache visual content: ${(error as Error).message}`);
     }
@@ -301,7 +301,7 @@ export class VisualContentService {
 
       // Download and cache visuals
       const cachedVisuals: VisualContent[] = [];
-      
+
       for (const visual of visuals) {
         try {
           const cachedPath = await this.downloadAndCacheVisual(visual);
@@ -310,9 +310,9 @@ export class VisualContentService {
             source: cachedPath, // Update source to local cached file
           });
         } catch (error) {
-          logger.warn('Failed to cache visual, using original URL', { 
+          logger.warn('Failed to cache visual, using original URL', {
             error: (error as Error).message,
-            originalSource: visual.source 
+            originalSource: visual.source
           });
           cachedVisuals.push(visual); // Keep original if caching fails
         }
@@ -337,22 +337,22 @@ export class VisualContentService {
 
       const files = await fs.readdir(this.cacheDir);
       const cutoffTime = Date.now() - (olderThanDays * 24 * 60 * 60 * 1000);
-      
+
       let deletedCount = 0;
-      
+
       for (const file of files) {
         const filePath = path.join(this.cacheDir, file);
         const stats = await fs.stat(filePath);
-        
+
         if (stats.mtime.getTime() < cutoffTime) {
           await fs.unlink(filePath);
           deletedCount++;
         }
       }
 
-      logger.info('Cache cleanup completed', { 
+      logger.info('Cache cleanup completed', {
         deletedFiles: deletedCount,
-        olderThanDays 
+        olderThanDays
       });
     } catch (error) {
       logger.error('Cache cleanup failed', error as Error);
@@ -363,13 +363,13 @@ export class VisualContentService {
    * Search for specific type of visual content
    */
   async searchSpecificContent(
-    query: string, 
-    type: 'image' | 'video', 
+    query: string,
+    type: 'image' | 'video',
     count: number = 10
   ): Promise<VisualContent[]> {
     try {
       const keywords = this.extractKeywords(query);
-      
+
       if (type === 'image') {
         return await this.searchUnsplashImages(keywords, count);
       } else {

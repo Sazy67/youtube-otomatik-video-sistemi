@@ -4,6 +4,7 @@ const path = require('path');
 const { exec } = require('child_process');
 const { promisify } = require('util');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
+// Only ElevenLabs TTS
 
 const execAsync = promisify(exec);
 
@@ -21,14 +22,18 @@ class RealVideoCreator {
         // Initialize Gemini
         if (this.geminiApiKey && this.geminiApiKey !== 'your-gemini-api-key-here') {
             this.genAI = new GoogleGenerativeAI(this.geminiApiKey);
-            this.geminiModel = this.genAI.getGenerativeModel({ model: "models/gemini-pro" });
+            this.geminiModel = this.genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
         }
         
+
+        
+        // Only ElevenLabs TTS - no fallbacks
+        
         // Debug API keys
-        console.log('🔑 API Keys loaded:');
+        console.log('🔑 Services loaded:');
         console.log('   OpenAI:', this.openaiApiKey ? '✅ Set' : '❌ Missing');
         console.log('   Gemini:', this.geminiApiKey && this.geminiApiKey !== 'your-gemini-api-key-here' ? '✅ Set' : '❌ Missing');
-        console.log('   ElevenLabs:', this.elevenlabsApiKey ? '✅ Set' : '❌ Missing');
+        console.log('   ElevenLabs:', this.elevenlabsApiKey && this.elevenlabsApiKey !== 'your-elevenlabs-api-key-here' ? '✅ ONLY TTS' : '❌ Missing');
         console.log('   Unsplash:', this.unsplashAccessKey ? '✅ Set' : '❌ Missing');
         
         // Create necessary directories
@@ -86,7 +91,7 @@ class RealVideoCreator {
                 },
                 metadata: {
                     title: this.generateTitle(topic),
-                    description: this.generateDescription(topic, script),
+                    description: this.generateDescription(topic),
                     tags: this.generateTags(topic),
                     category: 'Education'
                 },
@@ -163,42 +168,43 @@ Bir sonraki videomuzda görüşmek üzere, herkese sağlıklı ve bereketli gün
     }
 
     async createAudio(script, videoId) {
-        console.log('🎤 Creating professional Turkish voiceover...');
+        console.log('🎤 Creating Turkish voiceover with ElevenLabs ONLY...');
         
-        try {
-            const response = await axios.post(`https://api.elevenlabs.io/v1/text-to-speech/${this.elevenlabsVoiceId}`, {
-                text: script,
-                model_id: "eleven_multilingual_v2",
-                voice_settings: {
-                    stability: 0.5,
-                    similarity_boost: 0.75,
-                    style: 0.0,
-                    use_speaker_boost: true
-                }
-            }, {
-                headers: {
-                    'Accept': 'audio/mpeg',
-                    'Content-Type': 'application/json',
-                    'xi-api-key': this.elevenlabsApiKey
-                },
-                responseType: 'arraybuffer'
-            });
-
-            const audioFile = `./audio/audio_${videoId}.mp3`;
-            fs.writeFileSync(audioFile, response.data);
-            
-            console.log(`✅ Audio created: ${audioFile}`);
-            return audioFile;
-
-        } catch (error) {
-            console.error('❌ ElevenLabs API error:', error.response?.data || error.message);
-            
-            const audioFile = `./audio/audio_${videoId}.mp3`;
-            await execAsync(`ffmpeg -f lavfi -i anullsrc=channel_layout=stereo:sample_rate=48000 -t 10 "${audioFile}" -y`);
-            
-            console.log('⚠️ Created placeholder audio file');
-            return audioFile;
+        // Only use ElevenLabs - no fallbacks
+        if (!this.elevenlabsApiKey || this.elevenlabsApiKey === 'your-elevenlabs-api-key-here') {
+            throw new Error('ElevenLabs API key not configured');
         }
+        
+        console.log('🔄 Using ElevenLabs for Turkish voice...');
+        console.log('📝 Script length:', script.length, 'characters');
+        console.log('🔑 API Key:', this.elevenlabsApiKey.substring(0, 10) + '...');
+        
+        const response = await axios.post(`https://api.elevenlabs.io/v1/text-to-speech/${this.elevenlabsVoiceId}`, {
+            text: script,
+            model_id: "eleven_multilingual_v2",
+            voice_settings: {
+                stability: 0.5,
+                similarity_boost: 0.75,
+                style: 0.0,
+                use_speaker_boost: true
+            }
+        }, {
+            headers: {
+                'Accept': 'audio/mpeg',
+                'Content-Type': 'application/json',
+                'xi-api-key': this.elevenlabsApiKey
+            },
+            responseType: 'arraybuffer'
+        });
+
+        const mp3File = `./audio/audio_${videoId}.mp3`;
+        fs.writeFileSync(mp3File, response.data);
+        
+        const stats = fs.statSync(mp3File);
+        console.log(`✅ ElevenLabs Turkish voice created: ${mp3File}`);
+        console.log(`📊 Audio file size: ${Math.round(stats.size / 1024)}KB`);
+        
+        return mp3File;
     }
 
     async gatherImages(topic) {
@@ -208,8 +214,8 @@ Bir sonraki videomuzda görüşmek üzere, herkese sağlıklı ve bereketli gün
         const searchTerms = this.generateImageSearchTerms(topic);
         
         // Try to download real images from Unsplash
-        for (const term of searchTerms.slice(0, 5)) {
-            if (images.length >= 3) break;
+        for (const term of searchTerms.slice(0, 12)) {
+            if (images.length >= 15) break;
             
             try {
                 console.log(`🔍 Searching for: ${term}`);
@@ -217,7 +223,7 @@ Bir sonraki videomuzda görüşmek üzere, herkese sağlıklı ve bereketli gün
                 const response = await axios.get('https://api.unsplash.com/search/photos', {
                     params: {
                         query: term,
-                        per_page: 2,
+                        per_page: 5,
                         orientation: 'landscape'
                     },
                     headers: {
@@ -230,7 +236,7 @@ Bir sonraki videomuzda görüşmek üzere, herkese sağlıklı ve bereketli gün
 
                 if (response.data.results.length > 0) {
                     for (const photo of response.data.results) {
-                        if (images.length >= 3) break;
+                        if (images.length >= 15) break;
                         
                         try {
                             const imageUrl = photo.urls.regular;
@@ -241,7 +247,7 @@ Bir sonraki videomuzda görüşmek üzere, herkese sağlıklı ve bereketli gün
                                 timeout: 15000
                             });
                             
-                            const imagePath = `./images/unsplash_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.jpg`;
+                            const imagePath = `./images/unsplash_${Date.now()}_${Math.random().toString(36).substring(2, 11)}.jpg`;
                             fs.writeFileSync(imagePath, imageResponse.data);
                             
                             const stats = fs.statSync(imagePath);
@@ -266,7 +272,7 @@ Bir sonraki videomuzda görüşmek üzere, herkese sağlıklı ve bereketli gün
         // If no images downloaded, use sample images as fallback
         if (images.length === 0) {
             console.log('📸 Using sample garden images as fallback...');
-            for (let i = 1; i <= 3; i++) {
+            for (let i = 1; i <= 15; i++) {
                 const samplePath = `./images/sample_${i}.jpg`;
                 if (fs.existsSync(samplePath)) {
                     images.push(samplePath);
@@ -275,13 +281,21 @@ Bir sonraki videomuzda görüşmek üzere, herkese sağlıklı ve bereketli gün
             }
         }
         
-        // If still no images, create placeholders
+        // If still no images, create colorful placeholders
         if (images.length === 0) {
-            console.log('⚠️ Creating placeholder images...');
-            for (let i = 0; i < 3; i++) {
+            console.log('⚠️ Creating 15 placeholder images...');
+            const colors = ['forestgreen', 'lightgreen', 'darkgreen', 'olive', 'limegreen', 'seagreen', 'mediumseagreen', 'springgreen', 'palegreen', 'lightseagreen', 'darkseagreen', 'green', 'lime', 'chartreuse', 'greenyellow'];
+            
+            for (let i = 0; i < 15; i++) {
                 const placeholderPath = `./images/placeholder_${Date.now()}_${i}.jpg`;
-                await execAsync(`ffmpeg -f lavfi -i color=c=green:size=1920x1080:duration=1 -frames:v 1 -update 1 "${placeholderPath}" -y`);
-                images.push(placeholderPath);
+                const color = colors[i % colors.length];
+                
+                await execAsync(`ffmpeg -f lavfi -i "color=c=${color}:size=1920x1080:duration=1" -frames:v 1 "${placeholderPath}" -y`);
+                
+                if (fs.existsSync(placeholderPath)) {
+                    images.push(placeholderPath);
+                    console.log(`✅ Created ${color} placeholder: ${placeholderPath}`);
+                }
             }
         }
 
@@ -306,34 +320,150 @@ Bir sonraki videomuzda görüşmek üzere, herkese sağlıklı ve bereketli gün
 
     async assembleVideo(audioFile, images, videoId, duration) {
         console.log('🎞️ Assembling video with FFmpeg...');
+        console.log(`📊 Using ${images.length} images for ${duration}s video`);
         
         try {
             const videoFile = `./videos/video_${videoId}.mp4`;
             
-            // Use first image as static background with audio
-            const firstImage = images[0];
+            // Check if audio file exists and has content
+            if (!fs.existsSync(audioFile)) {
+                throw new Error(`Audio file not found: ${audioFile}`);
+            }
             
-            // Simple FFmpeg command that should work
-            const ffmpegCommand = `ffmpeg -loop 1 -i "${firstImage}" -i "${audioFile}" -c:v libx264 -c:a aac -t ${duration} -pix_fmt yuv420p -vf "scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2" "${videoFile}" -y`;
+            const audioStats = fs.statSync(audioFile);
+            console.log(`🎵 Audio file size: ${Math.round(audioStats.size / 1024)}KB`);
             
-            console.log('🔄 Creating video with first image as background...');
-            await execAsync(ffmpegCommand);
+            if (images.length === 1) {
+                // Single image with audio
+                const image = images[0];
+                console.log(`🔄 Creating video with single image: ${image}`);
+                
+                const ffmpegCommand = `ffmpeg -loop 1 -i "${image}" -i "${audioFile}" -c:v libx264 -c:a aac -b:a 192k -ar 48000 -shortest -pix_fmt yuv420p -vf "scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:black" "${videoFile}" -y`;
+                
+                await execAsync(ffmpegCommand);
+                
+            } else {
+                // Multiple images slideshow with audio - Simple approach
+                console.log(`🔄 Creating slideshow with ${images.length} images and audio...`);
+                
+                const imageDuration = Math.max(3, duration / images.length); // At least 3 seconds per image
+                console.log(`📸 Each image will show for ${imageDuration.toFixed(1)}s`);
+                console.log(`🎵 Audio file: ${audioFile}`);
+                
+                // Use first few images if too many
+                const maxImages = Math.min(images.length, 10); // Limit to 10 images for stability
+                const selectedImages = images.slice(0, maxImages);
+                console.log(`📸 Using ${selectedImages.length} images for slideshow`);
+                
+                try {
+                    // Create slideshow using simple concat method
+                    const tempVideos = [];
+                    const actualImageDuration = duration / selectedImages.length;
+                    
+                    console.log('🔄 Creating individual videos for each image...');
+                    for (let i = 0; i < selectedImages.length; i++) {
+                        const tempVideo = `./temp/slide_${i}_${Date.now()}.mp4`;
+                        const image = selectedImages[i];
+                        
+                        console.log(`   Processing ${i + 1}/${selectedImages.length}: ${path.basename(image)}`);
+                        
+                        // Create video for each image (no audio yet)
+                        const imageCommand = `ffmpeg -loop 1 -i "${image}" -t ${actualImageDuration} -c:v libx264 -pix_fmt yuv420p -vf "scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:black" "${tempVideo}" -y`;
+                        
+                        await execAsync(imageCommand);
+                        tempVideos.push(tempVideo);
+                    }
+                    
+                    // Create concat file
+                    const concatFile = `./temp/concat_${Date.now()}.txt`;
+                    const concatContent = tempVideos.map(video => `file '${path.resolve(video)}'`).join('\n');
+                    fs.writeFileSync(concatFile, concatContent);
+                    
+                    console.log('🔄 Concatenating videos and adding audio...');
+                    
+                    // Concatenate videos and add audio
+                    const finalCommand = `ffmpeg -f concat -safe 0 -i "${concatFile}" -i "${audioFile}" -c:v copy -c:a aac -b:a 192k -ar 48000 -shortest "${videoFile}" -y`;
+                    
+                    await execAsync(finalCommand);
+                    
+                    // Clean up
+                    tempVideos.forEach(temp => {
+                        if (fs.existsSync(temp)) fs.unlinkSync(temp);
+                    });
+                    if (fs.existsSync(concatFile)) fs.unlinkSync(concatFile);
+                    
+                    console.log(`✅ Slideshow created with ${selectedImages.length} images and audio`);
+                    
+                } catch (slideshowError) {
+                    console.error('❌ Slideshow creation failed:', slideshowError.message);
+                    
+                    // Fallback: Use first image with audio
+                    console.log('🔄 Fallback: Using first image with audio...');
+                    const fallbackCommand = `ffmpeg -loop 1 -i "${images[0]}" -i "${audioFile}" -c:v libx264 -c:a aac -b:a 192k -ar 48000 -shortest -pix_fmt yuv420p -vf "scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:black" "${videoFile}" -y`;
+                    
+                    await execAsync(fallbackCommand);
+                    console.log('✅ Fallback video created with first image and audio');
+                }
+            }
             
-            console.log(`✅ Video created successfully: ${videoFile}`);
-            return videoFile;
+            // Verify video was created
+            if (fs.existsSync(videoFile)) {
+                const videoStats = fs.statSync(videoFile);
+                console.log(`✅ Video created successfully: ${videoFile}`);
+                console.log(`📊 Video file size: ${Math.round(videoStats.size / 1024 / 1024)}MB`);
+                return videoFile;
+            } else {
+                throw new Error('Video file was not created');
+            }
 
         } catch (error) {
             console.error('❌ Video creation failed:', error.message);
+            console.error('🔍 Error details:', error.stack);
             
-            // Fallback: create simple video without image
             const videoFile = `./videos/video_${videoId}.mp4`;
+            
+            // Fallback 1: Try with a simple placeholder image
             try {
-                await execAsync(`ffmpeg -f lavfi -i color=c=darkgreen:size=1920x1080:duration=${duration} -i "${audioFile}" -c:v libx264 -c:a aac -pix_fmt yuv420p -shortest "${videoFile}" -y`);
-                console.log('✅ Created fallback video with green background');
+                console.log('🔄 Fallback 1: Creating simple placeholder image...');
+                
+                const placeholderImage = `./images/fallback_${Date.now()}.jpg`;
+                await execAsync(`ffmpeg -f lavfi -i color=c=blue:size=1920x1080:duration=1 -frames:v 1 "${placeholderImage}" -y`);
+                
+                if (fs.existsSync(placeholderImage)) {
+                    console.log('🔄 Using placeholder image with audio...');
+                    const fallbackCommand = `ffmpeg -loop 1 -i "${placeholderImage}" -i "${audioFile}" -c:v libx264 -c:a aac -b:a 192k -ar 48000 -shortest -pix_fmt yuv420p "${videoFile}" -y`;
+                    
+                    await execAsync(fallbackCommand);
+                    console.log('✅ Created fallback video with placeholder image and audio');
+                    return videoFile;
+                }
+                
+            } catch (fallbackError1) {
+                console.error('❌ Fallback 1 failed:', fallbackError1.message);
+            }
+            
+            // Fallback 2: Solid color with audio
+            try {
+                console.log('🔄 Fallback 2: Solid color background with audio...');
+                
+                const fallbackCommand = `ffmpeg -f lavfi -i color=c=navy:size=1920x1080:duration=${duration} -i "${audioFile}" -c:v libx264 -c:a aac -b:a 192k -ar 48000 -shortest -pix_fmt yuv420p "${videoFile}" -y`;
+                
+                await execAsync(fallbackCommand);
+                console.log('✅ Created fallback video with navy background and audio');
                 return videoFile;
-            } catch (fallbackError) {
-                console.error('❌ Fallback video creation also failed:', fallbackError.message);
-                throw new Error('Video creation completely failed');
+                
+            } catch (fallbackError2) {
+                console.error('❌ Fallback 2 failed:', fallbackError2.message);
+                
+                // Final fallback: video without audio
+                try {
+                    console.log('🔄 Final fallback: video without audio...');
+                    await execAsync(`ffmpeg -f lavfi -i color=c=purple:size=1920x1080:duration=${duration} -c:v libx264 -pix_fmt yuv420p "${videoFile}" -y`);
+                    console.log('⚠️ Created video without audio (purple background)');
+                    return videoFile;
+                } catch (finalError) {
+                    throw new Error('All video creation methods failed');
+                }
             }
         }
     }
@@ -343,7 +473,6 @@ Bir sonraki videomuzda görüşmek üzere, herkese sağlıklı ve bereketli gün
         
         try {
             const thumbnailFile = `./images/thumbnail_${Date.now()}.jpg`;
-            const title = this.generateTitle(topic).substring(0, 50);
             
             await execAsync(`ffmpeg -i "${firstImage}" -vf "scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2" "${thumbnailFile}" -y`);
             
@@ -360,7 +489,7 @@ Bir sonraki videomuzda görüşmek üzere, herkese sağlıklı ve bereketli gün
         return `${topic} - Yeşil Hayat Rotası Rehberi`;
     }
 
-    generateDescription(topic, script) {
+    generateDescription(topic) {
         return `🌿 ${topic} hakkında detaylı rehber!
 
 Bu videoda ${topic} konusunu ele alıyoruz. Yeşil Hayat Rotası kanalında doğayla iç içe yaşamanın püf noktalarını paylaşıyoruz.
